@@ -1,17 +1,24 @@
 using System;
 using Core.Character.Capsule;
 using Core.Character.Controllers;
+using Core.Character.Spectator;
 using Core.Input.Interfaces;
 using UnityEngine;
 
-namespace Core.Character.Spectator
+
+namespace Core.Character.Observer
 {
     [RequireComponent(typeof(InputRouter))]
-    public class HoverSpectatorBody : MonoBehaviour, IControllable, IPossessable
+    public class HoverObserverBody : MonoBehaviour, IControllable, IPossessable
     {
         [Header("Camera & Target")]
         [SerializeField] private Transform _cameraAnchor;
         public IPossessable Driver => this;
+        public Core.Camera.CameraViewMode CurrentViewMode
+        {
+            get => Core.Camera.CameraViewMode.FirstPerson;
+            set { /* Режим обзора всегда FirstPerson */ }
+        }
         public Transform CameraTarget => _cameraAnchor != null ? _cameraAnchor : transform;
 
         [Header("Movement Speed")]
@@ -103,7 +110,7 @@ namespace Core.Character.Spectator
             if (!_isPossessed) return;
 
             // 1. Направление взгляда камеры в горизонтальной плоскости
-            Camera mainCam = Camera.main;
+            UnityEngine.Camera mainCam = UnityEngine.Camera.main;
             Vector3 camForward = mainCam != null ? mainCam.transform.forward : intent.viewDirection;
             Vector3 forward = Vector3.ProjectOnPlane(camForward, Vector3.up).normalized;
             Vector3 right = mainCam != null 

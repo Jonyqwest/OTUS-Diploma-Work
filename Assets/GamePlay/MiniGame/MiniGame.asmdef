@@ -1,0 +1,18 @@
+{
+  "name": "GamePlay.MiniGame",
+  "rootNamespace": "GamePlay.MiniGame",
+  "references": [
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "UniTask"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

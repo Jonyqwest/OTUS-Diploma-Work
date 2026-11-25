@@ -1,0 +1,216 @@
+#pragma kernel GenerateGrass
+#pragma kernel FinalizeIndirectArgs
+#pragma target 4.5
+
+#include "../Includes/TerrainGrassGpuCommon.cginc"
+
+ByteAddressBuffer _TerrainPositions;
+ByteAddressBuffer _TerrainUVs;
+ByteAddressBuffer _TerrainIndices;
+Texture2D<float4> _MainTex;
+SamplerState sampler_MainTex;
+Texture2D<float4> _PaintTex;
+SamplerState sampler_PaintTex;
+float _HasPaintTex;
+
+AppendStructuredBuffer<TerrainGrassBlade> _GrassBlades;
+RWStructuredBuffer<uint> _IndirectArgs;
+
+float4x4 _LocalToWorld;
+float3 _CameraPositionWS;
+uint _TriangleCount;
+uint _IndexStart;
+uint _PositionStride;
+uint _PositionOffset;
+uint _UvStride;
+uint _UvOffset;
+float _GrassRenderDistanceWorld;
+float _GrassFadeStartWorld;
+float _GrassMinHeightWorld;
+float _GrassMaxHeightWorld;
+float _GrassWidthWorld;
+float _GrassRootLiftWorld;
+float _GrassThresholdGR;
+float _GrassThresholdBG;
+float _GrassSoftness;
+float _GrassSlopeLimit;
+float _GrassDensity;
+float _GrassDarknessThreshold;
+float _MetersToWorld;
+
+#define MAX_GRASS_CLUSTERS_PER_TRIANGLE 128u
+
+float GrassHash(uint value)
+{
+    value ^= 2747636419u;
+    value *= 2654435769u;
+    value ^= value >> 16;
+    value *= 2654435769u;
+    value ^= value >> 16;
+    return (value & 0x00ffffffu) / 16777215.0;
+}
+
+float3 LoadPosition(uint vertexIndex)
+{
+    uint address = vertexIndex * _PositionStride + _PositionOffset;
+    return asfloat(_TerrainPositions.Load3(address));
+}
+
+float2 LoadUv(uint vertexIndex)
+{
+    uint address = vertexIndex * _UvStride + _UvOffset;
+    return asfloat(_TerrainUVs.Load2(address));
+}
+
+float GrassGreenMask(float3 color)
+{
+    float maxChannel = max(color.r, max(color.g, color.b));
+    float minChannel = min(color.r, min(color.g, color.b));
+    float saturation = (maxChannel - minChannel) / max(maxChannel, 0.001);
+    
+    float diffGR = color.g - color.r;
+    float diffBG = color.g - color.b;
+    
+    float maskGR = smoothstep(_GrassThresholdGR - _GrassSoftness, _GrassThresholdGR + _GrassSoftness, diffGR);
+    float maskBG = smoothstep(_GrassThresholdBG - _GrassSoftness, _GrassThresholdBG + _GrassSoftness, diffBG);
+    float hueMask = maskGR * maskBG;
+    
+    float luminance = dot(color, float3(0.299, 0.587, 0.114));
+    float saturationMask = smoothstep(0.08, 0.25, saturation);
+    float visibleDarkMask = smoothstep(_GrassDarknessThreshold, _GrassDarknessThreshold + 0.12, luminance);
+    float visibleBrightMask = 1.0 - smoothstep(0.80, 0.98, luminance);
+    return hueMask * saturationMask * visibleDarkMask * visibleBrightMask;
+}
+
+[numthreads(64, 1, 1)]
+void GenerateGrass(uint3 dispatchId : SV_DispatchThreadID)
+{
+    uint triangleIndex = dispatchId.x;
+    if (triangleIndex >= _TriangleCount)
+        return;
+
+    uint indexAddress = (_IndexStart + triangleIndex * 3u) * 4u;
+    uint3 vertexIndices = _TerrainIndices.Load3(indexAddress);
+
+    float3 local0 = LoadPosition(vertexIndices.x);
+    float3 local1 = LoadPosition(vertexIndices.y);
+    float3 local2 = LoadPosition(vertexIndices.z);
+    float3 world0 = mul(_LocalToWorld, float4(local0, 1.0)).xyz;
+    float3 world1 = mul(_LocalToWorld, float4(local1, 1.0)).xyz;
+    float3 world2 = mul(_LocalToWorld, float4(local2, 1.0)).xyz;
+
+    // Reject whole terrain triangles before the density loop. On a 256x256
+    // tile this keeps the expensive satellite samples confined to the small
+    // circle around the camera.
+    float3 triangleCenter = (world0 + world1 + world2) / 3.0;
+    float triangleRadius = max(
+        distance(triangleCenter, world0),
+        max(distance(triangleCenter, world1), distance(triangleCenter, world2)));
+    if (distance(triangleCenter.xz, _CameraPositionWS.xz) > _GrassRenderDistanceWorld + triangleRadius)
+        return;
+
+    float3 normalWS = normalize(cross(world1 - world0, world2 - world0));
+    if (normalWS.y < 0.0)
+        normalWS = -normalWS;
+    float slope = 1.0 - abs(normalWS.y);
+    float slopeMask = 1.0 - smoothstep(0.0, max(_GrassSlopeLimit, 0.001), slope);
+    if (slopeMask <= 0.001)
+        return;
+
+    // Density is expressed in clusters per real square metre, independent of
+    // the source terrain vertex spacing. Roots are still interpolated from the
+    // coarse triangle, so increasing grass density does not subdivide the mesh.
+    float triangleAreaWorld = length(cross(world1 - world0, world2 - world0)) * 0.5;
+    float squareMetres = triangleAreaWorld / max(_MetersToWorld * _MetersToWorld, 0.000001);
+    uint grassClustersInTriangle = (uint)clamp(
+        round(squareMetres * _GrassDensity),
+        1.0,
+        (float)MAX_GRASS_CLUSTERS_PER_TRIANGLE);
+
+    float2 uv0 = LoadUv(vertexIndices.x);
+    float2 uv1 = LoadUv(vertexIndices.y);
+    float2 uv2 = LoadUv(vertexIndices.z);
+    uint seed = triangleIndex * MAX_GRASS_CLUSTERS_PER_TRIANGLE;
+
+    [loop]
+    for (uint bladeIndex = 0u; bladeIndex < MAX_GRASS_CLUSTERS_PER_TRIANGLE; ++bladeIndex)
+    {
+        if (bladeIndex >= grassClustersInTriangle)
+            break;
+
+        // Uniform random point inside the source terrain triangle.
+        float randomA = GrassHash(seed + bladeIndex * 2u);
+        float randomB = GrassHash(seed + bladeIndex * 2u + 1u);
+        float rootA = sqrt(randomA);
+        float3 barycentric = float3(
+            1.0 - rootA,
+            rootA * (1.0 - randomB),
+            rootA * randomB);
+
+        float3 rootWS = world0 * barycentric.x + world1 * barycentric.y + world2 * barycentric.z;
+        float distanceToCamera = distance(rootWS.xz, _CameraPositionWS.xz);
+        if (distanceToCamera > _GrassRenderDistanceWorld)
+            continue;
+
+        float2 uv = uv0 * barycentric.x + uv1 * barycentric.y + uv2 * barycentric.z;
+        float3 satelliteColor = _MainTex.SampleLevel(sampler_MainTex, saturate(uv), 0).rgb;
+        float greenMask = GrassGreenMask(satelliteColor) * slopeMask;
+
+        // Custom Paint Mask filter (Paths/Dirt/Water remove grass, Painted Grass boosts density):
+        if (_HasPaintTex > 0.5)
+        {
+            float4 paintControl = _PaintTex.SampleLevel(sampler_PaintTex, saturate(uv), 0);
+            float customNonGrass = paintControl.r + paintControl.b + (1.0 - paintControl.a);
+            float customGrass = paintControl.g;
+
+            if (customNonGrass > 0.05)
+            {
+                greenMask = 0.0;
+            }
+            else if (customGrass > 0.05)
+            {
+                greenMask = saturate(max(greenMask, customGrass * 1.5)) * slopeMask;
+            }
+        }
+
+        // The soft mask becomes stochastic density at green boundaries instead
+        // of creating a visible grid of equally transparent blades.
+        // Keep full density through the near field, then progressively remove
+        // distant blades while the draw shader also shrinks their geometry.
+        // This makes the 50-100 m transition soft without paying full density
+        // across the much larger outer ring.
+        float distanceDensity = 1.0 - smoothstep(
+            _GrassFadeStartWorld,
+            max(_GrassRenderDistanceWorld, _GrassFadeStartWorld + 0.0001),
+            distanceToCamera);
+        float selection = GrassHash(seed + 101u + bladeIndex);
+        if (selection > greenMask * distanceDensity)
+            continue;
+
+        float diffGR = satelliteColor.g - satelliteColor.r;
+        float diffBG = satelliteColor.g - satelliteColor.b;
+
+        float greenStrength = saturate(min(
+            (diffGR - _GrassThresholdGR) / max(0.25 - _GrassThresholdGR, 0.001),
+            (diffBG - _GrassThresholdBG) / max(0.25 - _GrassThresholdBG, 0.001)
+        ));
+
+        TerrainGrassBlade blade;
+        float bladeHeight = lerp(_GrassMinHeightWorld, _GrassMaxHeightWorld, greenStrength);
+        blade.rootWS = float4(rootWS + normalWS * _GrassRootLiftWorld, bladeHeight);
+        blade.normalWS = float4(normalWS, _GrassWidthWorld * 0.5);
+        blade.groundColor = float4(satelliteColor, 0.0);
+        blade.data = float4(GrassHash(seed + 211u + bladeIndex), greenStrength, 0.0, 0.0);
+        _GrassBlades.Append(blade);
+    }
+}
+
+[numthreads(1, 1, 1)]
+void FinalizeIndirectArgs(uint3 dispatchId : SV_DispatchThreadID)
+{
+    // CopyCount writes the blade count. Each blade is one triangle (3 vertices).
+    _IndirectArgs[0] *= 3u;
+    _IndirectArgs[1] = 1u;
+    _IndirectArgs[2] = 0u;
+    _IndirectArgs[3] = 0u;
+}

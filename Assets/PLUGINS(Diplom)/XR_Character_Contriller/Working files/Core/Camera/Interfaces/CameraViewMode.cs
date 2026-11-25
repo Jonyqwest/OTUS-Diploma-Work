@@ -1,7 +1,8 @@
-namespace PLUGINS_Diplom_.XR_Character_Contriller.Working_files.Core.Camera.Interfaces
+namespace Core.Camera
 {
-    public class CameraViewMode
+    public enum CameraViewMode
     {
-        
+        FirstPerson,
+        ThirdPerson
     }
 }

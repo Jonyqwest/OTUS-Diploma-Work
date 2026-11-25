@@ -1,0 +1,32 @@
+.unity-progress-bar {
+    position: absolute;
+    bottom: 100;
+    left: 45%;
+    right: 45%;
+    height: 10;
+}
+
+.unity-progress-bar__background {
+    background-color: transparent;
+    border-width: 0;
+    height: 10;
+    padding: 4;
+
+}
+
+.unity-progress-bar__progress {
+    background-color: #fff;
+    height: 3;
+    border-radius: 1;
+}
+
+.unity-label {
+    position: absolute;
+    bottom: 103;
+    height: 30;
+    left: 40%;
+    right: 40%;
+    font-size: 8;
+    margin-right: -20;
+    unity-text-align: middle-right;
+}
