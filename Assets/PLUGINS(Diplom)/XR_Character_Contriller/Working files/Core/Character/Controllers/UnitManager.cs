@@ -23,6 +23,8 @@ namespace Core.Character.Controllers
         private int _index = -1;
         private float _cycleTimer;
 
+        private int _lastControlledIndex = 0;
+        
         private void Awake()
         {
             if (controller == null) controller = GetComponentInChildren<ControllerFacade>();
@@ -35,24 +37,23 @@ namespace Core.Character.Controllers
 
         private void Update()
         {
+            // По Tab входим в последнего персонажа или переключаем следующего
             if (UnityEngine.Input.GetKeyDown(KeyCode.Tab))
-                NextUnit();
-
-            // По Escape переключаемся в режим обозревателя / возвращаемся к юниту
+            {
+                SelectUnitOrNext();
+            }
+            // По Escape — строго выход в режим обозревателя
             if (UnityEngine.Input.GetKeyDown(KeyCode.Escape) && controller != null)
             {
-                if (controller.IsObserverActive)
+                if (!controller.IsObserverActive)
                 {
-                    // Если мы в обозревателе — возвращаемся к юниту
-                    NextUnit();
-                }
-                else
-                {
-                    // Выходим из юнита в режим обозревателя
+                    // Запоминаем текущего персонажа перед вылетом в небо
+                    int currentIndex = FindCurrentIndex();
+                    if (currentIndex >= 0)
+                        _lastControlledIndex = currentIndex;
                     controller.ReturnToObserver(placeAboveCurrentUnit: true);
                 }
             }
-
             if (autoCycle && cycleInterval > 0f && _units.Count > 0)
             {
                 _cycleTimer += Time.deltaTime;
@@ -63,7 +64,31 @@ namespace Core.Character.Controllers
                 }
             }
         }
-
+        
+        
+        /// <summary>
+        /// По Tab: если мы в режиме обозревателя — возвращаемся к последнему активному юниту.
+        /// Если уже управляем юнитом — берем следующего по кругу.
+        /// </summary>
+        public void SelectUnitOrNext()
+        {
+            if (_units.Count == 0)
+                RefreshUnits();
+            if (_units.Count == 0 || controller == null)
+                return;
+            if (controller.IsObserverActive)
+            {
+                // Возвращаемся именно в того юнита, на котором летали перед выходом
+                int targetIndex = Mathf.Clamp(_lastControlledIndex, 0, _units.Count - 1);
+                Possess(targetIndex);
+            }
+            else
+            {
+                // Если уже в теле юнита — переключаем на следующего
+                NextUnit();
+            }
+        }
+        
         /// <summary>
         /// Заново собирает всех активных юнитов в сцене.
         /// </summary>
@@ -81,13 +106,12 @@ namespace Core.Character.Controllers
         {
             if (_units.Count == 0)
                 RefreshUnits();
-
             if (_units.Count == 0 || controller == null)
                 return;
-
             _index = FindCurrentIndex();
             int next = (_index + 1) % _units.Count;
             _index = next;
+            _lastControlledIndex = next;
             controller.Possess(_units[next]);
             _cycleTimer = 0f;
         }

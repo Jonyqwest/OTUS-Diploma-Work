@@ -105,24 +105,45 @@ namespace Core.Character.Observer
             }
         }
 
+            private Transform _cachedActiveCameraTransform;
+
+            private Transform GetActiveCameraTransform()
+            {
+                // Берем фасад камеры нашего контроллера
+                var facade = GetComponentInParent<CameraFasade>() ?? FindObjectOfType<CameraFasade>();
+                if (facade != null && facade.rig != null)
+                {
+                    // На десктопе активна CameraMono, в VR — CameraVR
+                    if (facade.rig.CameraMono != null && facade.rig.CameraMono.isActiveAndEnabled)
+                        return facade.rig.CameraMono.transform;
+
+                    if (facade.rig.CameraVR != null && facade.rig.CameraVR.isActiveAndEnabled)
+                        return facade.rig.CameraVR.transform;
+            
+                    // Если камеры выключены в редакторе, берем headPivot (он всегда крутится мышкой/шлемом!)
+                    if (facade.rig.headPivot != null)
+                        return facade.rig.headPivot;
+                }
+
+                return transform;
+            }
+
         public void ApplyMovement(ref MovementIntent intent, float dt)
         {
             if (!_isPossessed) return;
 
-            // 1. Направление взгляда камеры в горизонтальной плоскости
-            UnityEngine.Camera mainCam = UnityEngine.Camera.main;
-            Vector3 camForward = mainCam != null ? mainCam.transform.forward : intent.viewDirection;
+            // 1. Получаем реальное направление взгляда активной камеры на экране
+            Transform camTransform = GetActiveCameraTransform();
+            Vector3 camForward = camTransform != null ? camTransform.forward : intent.viewDirection;
+            Vector3 camRight = camTransform != null ? camTransform.right : Vector3.Cross(Vector3.up, camForward);
+
             Vector3 forward = Vector3.ProjectOnPlane(camForward, Vector3.up).normalized;
-            Vector3 right = mainCam != null 
-                ? Vector3.ProjectOnPlane(mainCam.transform.right, Vector3.up).normalized 
-                : Vector3.Cross(Vector3.up, forward).normalized;
+            Vector3 right = Vector3.ProjectOnPlane(camRight, Vector3.up).normalized;
 
-            // Синхронизируем вращение спектатора с направлением взгляда
-            if (forward.sqrMagnitude > 0.001f)
-                transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
-
-            // Горизонтальный инпут (WASD / Стик)
+            // Горизонтальный инпут от WASD / Левого стика
             Vector3 inputVector = intent.moveRun;
+            
+            
             Vector3 horizontalMove = (forward * inputVector.z + right * inputVector.x) * _moveSpeed * dt;
 
             // 2. Управление высотой полета (Колесико мыши + клавиши E / Q)
@@ -172,5 +193,6 @@ namespace Core.Character.Observer
                 currentPos.z + horizontalMove.z
             );
         }
+        
     }
 }
