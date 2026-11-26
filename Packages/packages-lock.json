@@ -293,9 +293,9 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.openxr.picoxr": {
-      "version": "file:/Users/jaygaura/Documents/UNITY/OTUS-Diploma-Git/Downloads/PICO/Unity OpenXR IntegrationSDK-1.4.0-20250407",
+      "version": "file:Unity OpenXR IntegrationSDK-1.4.0-20250407",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {
         "com.unity.xr.core-utils": "2.2.0",
         "com.unity.xr.openxr": "1.8.2"
