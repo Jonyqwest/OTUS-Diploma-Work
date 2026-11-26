@@ -22,6 +22,17 @@ namespace Core.Character.Spectator
             _customProvider = null;
         }
 
+        /// <summary>
+        /// Запрашивает высоту земли по всем слоям (~0).
+        /// </summary>
+        public static float GetHeight(Vector3 worldPosition)
+        {
+            return GetHeight(worldPosition, ~0);
+        }
+
+        /// <summary>
+        /// Запрашивает высоту земли с фильтрацией по слоям.
+        /// </summary>
         public static float GetHeight(Vector3 worldPosition, LayerMask groundLayer)
         {
             // 1. Если подключен внешний провайдер (например, OWT GlobalElevation)
