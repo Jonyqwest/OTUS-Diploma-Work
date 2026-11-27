@@ -19,7 +19,8 @@ namespace Multiplayer
                 clientID = _clientIDService.GetNext();
             }
 
-            prefab.SpawnAsPlayerObject(clientID);
+            var clone = GameObject.Instantiate(prefab);
+            clone.SpawnAsPlayerObject(clientID);
         }
 
         public void CreateObject(NetworkObject prefab, Vector3 position = default, Quaternion rotation = default, Transform parent = null)

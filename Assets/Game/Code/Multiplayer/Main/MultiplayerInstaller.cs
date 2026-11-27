@@ -12,6 +12,7 @@ namespace Multiplayer
             Container.Bind<IMultiplayerFacade>().To<MultiplayerFacade>().AsSingle();
             Container.Bind<IClientIDService>().To<ClientIDService>().AsSingle();
             Container.Bind<IMultiplayerService>().To<MultiplayerService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<InputService>().AsSingle();
         }
     }
 }

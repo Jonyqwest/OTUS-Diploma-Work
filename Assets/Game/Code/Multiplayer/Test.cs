@@ -1,6 +1,5 @@
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Zenject;
 
 namespace Multiplayer
@@ -8,26 +7,25 @@ namespace Multiplayer
     public class Test : MonoBehaviour
     {
         [Inject] private IMultiplayerFacade _facade;
+        [Inject] private IInputService _inputService;
         [SerializeField] private NetworkObject _player;
 
         private void Start()
         {
-            MyInput myInput = new MyInput();
-            myInput.Enable();
-            myInput.Multiplayer.Host.performed += SetHost;
-            myInput.Multiplayer.Client.performed += SetClient;
+            _inputService.HostConnectClicked += SetHost;
+            _inputService.ClientConnectClicked += SetClient;
         }
 
-        private void SetClient(InputAction.CallbackContext context)
+        private void SetHost()
         {
-            NetworkManager.Singleton.StartClient();
+            NetworkManager.Singleton.StartHost();
 
             _facade.CreatePlayer(_player);
         }
 
-        private void SetHost(InputAction.CallbackContext context)
+        private void SetClient()
         {
-            NetworkManager.Singleton.StartHost();
+            NetworkManager.Singleton.StartClient();
 
             _facade.CreatePlayer(_player);
         }

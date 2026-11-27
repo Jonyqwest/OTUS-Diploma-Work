@@ -1,21 +1,21 @@
+using Multiplayer;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using Zenject;
 
 public class SpawnBullet : MonoBehaviour
 {
     [SerializeField] private NetworkObject _bullet;
+    [Inject] private IInputService _inputService;
 
     private void Start()
     {
-        MyInput myInput = new MyInput();
-        myInput.Enable();
-        myInput.Multiplayer.SpawnBullet.performed += Spawn;
+        _inputService.SpawnBulletClicked += Spawn;
     }
 
-    private void Spawn(InputAction.CallbackContext context)
+    private void Spawn()
     {
         var bullet = Instantiate(_bullet, transform.position, transform.rotation);
-        //bullet.Spawn();
+        bullet.Spawn();
     }
 }
