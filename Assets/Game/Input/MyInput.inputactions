@@ -1,0 +1,75 @@
+{
+    "version": 1,
+    "name": "MyInput",
+    "maps": [
+        {
+            "name": "Multiplayer",
+            "id": "f41fb807-1419-437a-bc9a-e96689676d1b",
+            "actions": [
+                {
+                    "name": "Client",
+                    "type": "Button",
+                    "id": "af277a97-ae78-4451-976b-9815e392cc41",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Host",
+                    "type": "Button",
+                    "id": "6aaa634a-3c9d-4cc0-87a5-2ff1e0a96031",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SpawnBullet",
+                    "type": "Button",
+                    "id": "90c5498b-129e-4e6e-923f-4d6b4c5fc419",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "6628b423-70c9-4c7b-976a-d4196cab7310",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Client",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0d91f77c-4da7-463f-a476-ba9cf4173e0a",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Host",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a0bf3763-d47f-4275-a117-9fae3b6c4400",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SpawnBullet",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
