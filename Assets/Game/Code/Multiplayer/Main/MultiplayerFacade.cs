@@ -1,17 +1,20 @@
 using Unity.Netcode;
-using UnityEngine;
 using Zenject;
 
 namespace Multiplayer
 {
     public class MultiplayerFacade : IMultiplayerFacade
     {
-        [Inject] private IMultiplayerService _multiplayerService;
+        [Inject] private NetworkManager _networkManager;
 
-        public void CreatePlayer(NetworkObject prefab, ulong clientID = 0) =>
-            _multiplayerService.CreatePlayer(prefab, clientID);
+        public void StartClient()
+        {
+            _networkManager.StartClient();
+        }
 
-        public void CreateObject(NetworkObject prefab, Vector3 position = default, Quaternion rotation = default, Transform parent = null) =>
-            _multiplayerService.CreateObject(prefab, position, rotation, parent);
+        public void StartHost()
+        {
+            _networkManager.StartHost();
+        }
     }
 }
