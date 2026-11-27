@@ -76,7 +76,8 @@ namespace WanzyeeStudio.Json{
 		/// <summary>
 		/// Initialize when start up, set <c>Newtonsoft.Json.JsonConvert.DefaultSettings</c> if not yet.
 		/// </summary>
-		[RuntimeInitializeOnLoadMethod]
+		// Disabled: global DefaultSettings break Unity packages (MPPM, Relay). Use JsonNetUtility.defaultSettings explicitly.
+		// [RuntimeInitializeOnLoadMethod]
 		private static void Initialize(){
 			if(null == JsonConvert.DefaultSettings) JsonConvert.DefaultSettings = () => defaultSettings;
 		}
@@ -125,6 +126,8 @@ namespace WanzyeeStudio.Json{
 				).Where((type) => null != type.GetConstructor(new Type[0])
 
 				).Where((type) => !(null != type.Namespace && type.Namespace.StartsWith("Newtonsoft.Json"))
+				// Skip Unity's internal converters (e.g. Unity.Services.*.JsonObjectConverter throws in CanConvert)
+				).Where((type) => !(null != type.Namespace && (type.Namespace.StartsWith("Unity.") || type.Namespace.StartsWith("UnityEngine") || type.Namespace.StartsWith("UnityEditor")))
 				).OrderBy((type) => null != type.Namespace && type.Namespace.StartsWith("WanzyeeStudio")
 				
 			).ToArray();
@@ -144,7 +147,7 @@ namespace WanzyeeStudio.Json{
 		 * There's a bug of RuntimeInitializeOnLoadMethodAttribute issued above.
 		 * Here directly split into two initialize methods to avoid that, and make the code cleaner.
 		 */
-		[UnityEditor.InitializeOnLoadMethod]
+		// [UnityEditor.InitializeOnLoadMethod]
 		private static void InitializeEditor(){
 			Initialize();
 		}
