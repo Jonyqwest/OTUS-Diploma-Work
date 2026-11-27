@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/MY/GLOBAL/Open%20World%20Tile%20plugin/Working-files/WORLDTILES/UI/progress/progress.uss?fileID=7433441132597879392&amp;guid=1b131516ba1624571bba6cbcc6bd5bac&amp;type=3#progress" />
+   
+</ui:UXML>

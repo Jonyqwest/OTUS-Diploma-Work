@@ -6,11 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/Initialize.unity
+    guid: bfe4f449deb60423db758d32a42374c8
   - enabled: 1
-    path: Assets/Game/Scenes/Test Multiplayer.unity
-    guid: 88f8a5e820e0e9945a6d26ecd420308d
+    path: Assets/Scenes/Main.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/SampleScene.unity
+    guid: e9d77f6166d2d4eda883fcbdde44f513
   m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 6820da56a3f157743a23bf55c6ab3e0f, type: 3}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 08d937d01a04949bf90e1700beaab130, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 3fd623ff174954b3aa4290d7f5ac4988, type: 2}
   m_UseUCBPForAssetBundles: 0

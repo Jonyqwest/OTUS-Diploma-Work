@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: d130e951aaf3f4645952b9d6b9cde985
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - characterConfig: {fileID: 11400000, guid: ad22c6df46de0460ab1af57709db187c, type: 2}
+  - forceProfile: {fileID: 11400000, guid: 5b40571c0dbc94f69a9d44207ed82e91, type: 2}
+  - jumpHorizontalProfile: {fileID: 11400000, guid: 8857290817a6945c9ac115860ef4a994,
+      type: 2}
+  - jumpVerticalProfile: {fileID: 11400000, guid: 0c9a7fd25fe49405b8e0b7123bbfeb79,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
